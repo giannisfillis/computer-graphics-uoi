@@ -1,0 +1,58 @@
+#version 330 core
+
+in vec4 fragmentColor;
+in vec2 UV;
+
+in vec3 Position_worldspace;
+in vec3 Normal_cameraspace;
+in vec3 EyeDirection_cameraspace;
+in vec3 LightDirection_cameraspace;
+
+out vec3 color;
+
+uniform sampler2D myTextureSampler; 
+uniform bool useTexture; // True for textured objects, false for color-only objects
+uniform mat4 MV;
+uniform vec3 LightPosition_worldspace;
+
+void main() {
+    // Light properties
+    vec3 LightColor = vec3(1.0, 1.0, 1.0);
+    float LightPower = 50.0f;
+
+    // Material properties
+    vec3 MaterialDiffuseColor;
+    if (useTexture) {
+        // Use texture color for textured objects
+        MaterialDiffuseColor = texture(myTextureSampler, UV).rgb;
+    } else {
+        // Use flat fragment color for non-textured objects
+        MaterialDiffuseColor = fragmentColor.rgb;
+    }
+
+    vec3 MaterialAmbientColor = vec3(0.1, 0.1, 0.1) * MaterialDiffuseColor;
+    vec3 MaterialSpecularColor = vec3(0.3, 0.3, 0.3);
+
+    // Distance to light
+    float distance = length(LightPosition_worldspace - Position_worldspace);
+
+    // Normal and light direction
+    vec3 n = normalize(Normal_cameraspace);
+    vec3 l = normalize(LightDirection_cameraspace);
+
+    // Diffuse lighting
+    float cosTheta = clamp(dot(n, l), 0, 1);
+
+    // Specular lighting
+    vec3 E = normalize(EyeDirection_cameraspace);
+    vec3 R = reflect(-l, n);
+    float cosAlpha = clamp(dot(E, R), 0, 1);
+
+    // Combine lighting components
+     color = 
+        MaterialAmbientColor +
+        MaterialDiffuseColor * LightColor * LightPower * cosTheta / (distance * distance) +
+        MaterialSpecularColor * LightColor * LightPower * pow(cosAlpha, 5.0) /(distance * distance);
+
+    
+}
